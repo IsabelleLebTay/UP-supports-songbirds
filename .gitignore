@@ -1,0 +1,10 @@
+# Data
+Data/
+
+# Analysis and acoustic-processing files
+Acoustic processing
+Analyses/acoustic_thresholding.Rmd
+Code\Analyses\optional_acoustic_thresholding.Rmd
+
+# Publication metadata
+PUBLICATION_MANIFEST.md
