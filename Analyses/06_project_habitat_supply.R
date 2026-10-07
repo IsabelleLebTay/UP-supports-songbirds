@@ -35,14 +35,27 @@ OF <- 2L
 UP <- 3L
 treatment_labels <- c("CLH", "OF", "UP")
 
-# Landbase constants are derived from proprietary Al-Pac landbase summaries.
-# Public data needed to recompute the model is in Data/; these constants define
-# the management scenarios used for the habitat-supply projection.
+# Landbase constants are derived from proprietary Al-Pac vegetation inventory,
+# harvest-polygon and wildfire layers (not distributable). Accounting window
+# is 2003-2025, when understory protection began.
+#   - Starting old-forest (OF) pool: focal type >=80 yr in 2025, never
+#     harvested, and not burned 2003-2025.
+#   - CLH and UP pools: conventional (CC) and understory-protection (PC)
+#     openings with harvest year 2003-2025.
+#   - Net OF loss = fire loss + harvest loss - successional inflow.
+# Fire enters the projection only through the OF loss rate: burned old forest
+# leaves the focal landbase and is never assigned to CLH or UP.
+of_rates <- list(
+  fire_loss = 4803,    # OF burned 2003-2025 (>=80 yr at fire), ha/yr
+  harvest_loss = 595,  # OF harvested 2003-2025 (>=80 yr at harvest), ha/yr
+  inflow = 3995        # unburned, unharvested stands aged 70-79 in 2025 / 10, ha/yr
+)
+
 landbase <- list(
-  of_ha_initial = 535912,
-  clh_ha_initial = 34211,
-  up_ha_initial = 5252,
-  of_annual_loss = 786,
+  of_ha_initial = 83502 + 371667, # reserved + harvestable OF
+  clh_ha_initial = 22336,
+  up_ha_initial = 5192,
+  of_annual_loss = of_rates$fire_loss + of_rates$harvest_loss - of_rates$inflow,
   max_tsh = 22L
 )
 
