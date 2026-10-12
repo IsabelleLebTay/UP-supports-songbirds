@@ -1,10 +1,20 @@
-# Data
-Data/
+# Data are distributed through Borealis, including the revised CSV package.
+/Data/
 
-# Analysis and acoustic-processing files
-Acoustic processing
-Analyses/acoustic_thresholding.Rmd
-Code\Analyses\optional_acoustic_thresholding.Rmd
+# Local acoustic provenance and publication packaging files.
+/Acoustic processing/
+/Analyses/acoustic_thresholding.Rmd
+/PUBLICATION_MANIFEST.md
 
-# Publication metadata
-PUBLICATION_MANIFEST.md
+# Generated results, compiled models, and local settings.
+/Results/
+/Analyses/*.exe
+/Analyses/*.hpp
+/Analyses/*.o
+/Analyses/dynocc_multispecies
+.env
+.Rhistory
+.RData
+.Rproj.user/
+Rplots.pdf
+*.tmp

@@ -1,8 +1,11 @@
-# Extract old-forest baseline occupancy and BRCR background trend summaries.
+# Optional old-forest structural trajectory and BRCR change summaries.
+# These trajectories omit calendar-year random walks: they describe relaxation
+# from initial occupancy under constant transition rates, not estimated regional
+# temporal declines. Script 06 does not use these diagnostic change scenarios.
 #
 # Inputs:
 #   Results/Model fits/Model_fit.rds
-#   Data/full_data_for_stan.rds
+#   Data/REVISED/full_data_for_stan.rds
 #
 # Outputs:
 #   Results/Projections/OF_*.csv
@@ -16,12 +19,12 @@ projection_dir <- file.path("Results", "Projections")
 dir.create(projection_dir, recursive = TRUE, showWarnings = FALSE)
 
 fit <- readRDS(file.path("Results", "Model fits", "Model_fit.rds"))
-full_data <- readRDS(file.path("Data", "full_data_for_stan.rds"))
+full_data <- readRDS(file.path("Data", "REVISED", "full_data_for_stan.rds"))
 
 species_labels <- full_data$species_map$species
 n_species <- length(species_labels)
 n_years <- full_data$stan_data$n_years
-years <- full_data$year_base + seq_len(n_years) - 1L
+years <- seq_len(n_years) - 1L # elapsed trajectory years, not calendar years
 OF <- 2L
 
 clamp <- function(x, eps = 1e-6) {
@@ -52,7 +55,7 @@ of_psi_summary <- map_dfr(species_labels, function(sp) {
 
 write_csv(as_tibble(of_psi_draws), file.path(projection_dir, "OF_baseline_psi_draws.csv"))
 
-# Full OF occupancy trajectory by species. TSH grid choice is arbitrary for OF
+# Structural OF occupancy trajectory by species (no calendar-year effects). TSH grid choice is arbitrary for OF
 # because TSH effects are zero for the OF treatment.
 of_traj_draws <- map(seq_len(n_species), function(sp) {
   vars <- paste0("occ_trajectory[", sp, ",", OF, ",1,", seq_len(n_years), "]")

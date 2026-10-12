@@ -1,95 +1,107 @@
-# Understory protection harvest supports forest songbirds over time but does not replace old forest for sensitive species
+# Understory protection harvest supports forest songbirds over time but does not offset regional fire-driven losses of old-forest songbird occupancy
 
-## General information
-Code for: Understory protection harvest supports forest songbirds over time but does not replace old forest for sensitive species<br>
-Dataset archivied on Borealis: https://doi.org/10.5683/SP3/OZUBY9
+Analysis code for the revised manuscript by Isabelle Lebeuf-Taylor, Taylor Hart, Thomas Habib, and Erin Bayne (*Ecological Applications*, under review).
 
-**Authors:**
-- Isabelle Lebeuf-Taylor (corresponding author), Department of Biological Sciences, University of Alberta, Edmonton, Alberta, Canada. lebeufta@ualberta.ca. ORCID: 0000-0001-6809-7249
-- Taylor Hart, Department of Biological Sciences, University of Alberta, Edmonton, Alberta, Canada
-- Thomas Habib, Alberta-Pacific Forest Industries
-- Erin Bayne, Department of Biological Sciences, University of Alberta, Edmonton, Alberta, Canada
+- **Data:** [Borealis](https://doi.org/10.5683/SP3/OZUBY9)
+- **Code:** [UP-supports-songbirds](https://github.com/IsabelleLebTay/UP-supports-songbirds)
+- **Corresponding author:** Isabelle Lebeuf-Taylor, Department of Biological Sciences, University of Alberta; lebeufta@ualberta.ca; [ORCID](https://orcid.org/0000-0001-6809-7249)
+- **Affiliations:** Lebeuf-Taylor, Hart, and Bayne: University of Alberta; Habib: Alberta-Pacific Forest Industries.
+- **Funding:** Alberta-Pacific Forest Industries Inc., Mitacs Accelerate (IT34177), and FRIAA.
 
-**Date of data collection:** 2015-2025
+## Study and analysis
 
-**Geographic location of data collection:** Bird Conservation Region 6, Alberta, Canada
+The study covers 2015–2025 in northeastern Alberta, Canada (Bird Conservation Region 6). It compares understory protection harvest (UP), conventional low-retention harvest (CLH), and unharvested old forest (OF), with one site per treatment in each of 54 spatial clusters.
 
-**Funding sources:** Research funding was provided by Alberta Pacific Forest Industries Inc. matched by Mitacs Accelerate (Number IT34177), the Forest Research Improvement Alliance of Alberta (FRIAA)
+The revised analysis uses 3,798 three-minute recordings from 162 sites and 480 site-years. There are 466 site-years with eight recordings and 14 with fewer (one with two, six with four, one with five, three with six, and three with seven). Eleven sites were surveyed in two years, 146 in three years, and five in four years. Survey years present are 2015, 2016, and 2020–2025; the model propagates occupancy through unsurveyed years.
 
-**Associated publication:** Lebeuf-Taylor I, Hart T, Habib T, Bayne E. Understory protection harvest supports forest songbirds over time but does not replace old forest for sensitive species. *Ecological Applications*. [under review]
+The six focal species are Bay-breasted Warbler (BBWA), Brown Creeper (BRCR), Black-throated Green Warbler (BTNW), Hermit Thrush (HETH), Tennessee Warbler (TEWA), and Winter Wren (WIWR). Detections use species-specific HawkEars thresholds at modelled P(true positive) = 0.90. A recording is positive if any scored window reaches its species' threshold.
 
-**Code repository:** https://github.com/IsabelleLebTay/UP-supports-songbirds.git
+The Bayesian multi-species dynamic occupancy model estimates initial occupancy, persistence, colonization, and detection. Initial occupancy includes treatment, time since harvest (TSH), distance to edge (DTE), UP understory height, and cluster effects. Persistence and colonization include treatment-specific TSH and DTE slopes, cluster effects, and treatment-level temporal random walks with species deviations. Detection includes species-specific time-of-day and day-of-year effects. OF TSH slopes are fixed at zero. The likelihood integrates latent occupancy states and compounds annual transitions across gaps between surveys.
 
-## Dataset description
-This dataset supports the analysis for “Understory protection harvest supports forest songbirds over time but does not replace old forest for sensitive species.” The study evaluates whether understory protection harvest, a partial harvest method that removes deciduous overstory while retaining younger white spruce, provides long-term conservation value for old-forest-associated boreal songbirds in northeastern Alberta, Canada. Autonomous recording units were deployed from 2015 to 2025 across 162 sites in the Alberta-Pacific Forest Industries Inc. Forest Management Agreement area. Sites were organized into 54 spatial clusters, each containing three treatments: understory protection harvest, conventional low-retention harvest, and unharvested old forest. Most sites were surveyed in three years, with four 3-minute recordings selected per site visit. Species detections were identified using the HawkEars acoustic classifier and species-specific confidence thresholds validated against manual review. The data support a Bayesian multi-species dynamic occupancy model for six focal songbird species: Tennessee Warbler, Hermit Thrush, Winter Wren, Brown Creeper, Bay-breasted Warbler, and Black-throated Green Warbler. The analysis estimates treatment-specific occupancy, colonization, and persistence while accounting for imperfect detection, time of day, day of year, time since harvest, distance to treatment edge, retained understory height, and temporal variation across the 11-year monitoring period. The dataset also supports landscape-level projections of expected occupied habitat for Brown Creeper under alternative understory protection implementation scenarios. The repository includes processed analysis data and derived data products needed to reproduce the analyses reported in the manuscript. Proprietary vegetation inventory and harvest spatial layers owned by Alberta-Pacific Forest Industries Inc. are not included. Analysis code is archived separately on GitHub. (2026-06-01)
+## Revised data package
 
-## File structure and descriptions
+Download the revised CSVs from Borealis and place them in **Data/REVISED/** at the repository root. The code deliberately uses this directory, so the original CSVs in Data/ can be retained. Earlier four-recording data releases cannot reproduce the revised analysis. Data and generated results are excluded from Git: GitHub distributes code, and Borealis distributes data.
 
-### Data files
-| File | Description |
-|------|-------------|
-| `Data/response.csv` | Recording-level detection/non-detection table for the six focal songbird species. Each row is one selected recording, with the site identifier, transect/cluster, treatment, survey year, day of year, time of day, and binary species detections used in the occupancy model. |
-| `Data/predictors.csv` | Site-level covariate table joined to `response.csv` by `location`. Contains the distance-to-edge, harvest-year, and retained-understory-height variables used to prepare the Stan model inputs. |
+| File in Data/REVISED | Purpose |
+| --- | --- |
+| response.csv | 3,798 recording-level rows of survey covariates and binary detections; required for scripts 01 and 08. |
+| predictors.csv | 162 site-level rows of distance to edge, harvest year, and understory height; required for script 01. |
+| landbase_accounting_2003_2025.csv | Aggregate areas and rounded annual rates used in the three-species projections; required for script 06. |
+| annual_old_forest_rates_2003_2025.csv | Unrounded GIS-derived annual rates, retained as provenance. Script 06 uses the rounded accounting values to reproduce Table 3. |
+| hawkears_thresholds_8recs.csv | Saved threshold-estimation output, validation counts, and detected site-year totals; provenance, not an input to the occupancy fit. |
 
-### Code files
-| File | Description |
-|------|-------------|
-| `Code/Analyses/01_prepare_stan_data.R` | Reads `Data/response.csv` and `Data/predictors.csv`; maps species, sites, clusters, treatments, visits, and recordings; scales day-of-year, time-of-day, time-since-harvest, distance-to-edge, and retained-understory-height covariates; and writes `Data/full_data_for_stan.rds`. |
-| `Code/Analyses/02_fit_dynocc_model.R` | Fits the final multi-species dynamic occupancy model with `cmdstanr` and `Code/Analyses/dynocc_multispecies.stan`; writes `Results/Model fits/Model_fit.rds` and `Results/Summaries/model_fit_diagnostics.csv`. Requires `CMDSTAN_PATH` to point to a CmdStan installation. |
-| `Code/Analyses/dynocc_multispecies.stan` | Stan model for multi-species dynamic occupancy, including initial occupancy, persistence, colonization, detection, treatment, time-since-harvest, distance-to-edge, retained-understory-height, cluster, and year effects, plus generated quantities used for summaries and contrasts. |
-| `Code/Analyses/03_extract_posterior_summaries.R` | Extracts posterior summaries, convergence diagnostics, treatment contrasts, detection summaries, occupancy trajectories, time-since-harvest effects, distance-to-edge effects, and LOO inputs from `Model_fit.rds`; writes CSV outputs to `Results/Summaries`. |
-| `Code/Analyses/04_plot_dynocc_figures.R` | Creates manuscript and supplement figures from posterior summaries and generated quantities; writes figure files to `Results/Figures`. |
-| `Code/Analyses/05_extract_OF_brcr_trends.R` | Extracts old-forest baseline occupancy, old-forest annual trend summaries, and Brown Creeper background-change scenarios; writes CSV outputs to `Results/Projections`. |
-| `Code/Analyses/06_project_habitat_supply.R` | Projects Brown Creeper occupied habitat equivalent under alternative harvest scenarios using the fitted model and landbase constants; writes projection tables to `Results/Projections`. |
-| `Code/Analyses/07_plot_habitat_supply.R` | Plots Brown Creeper habitat-supply projections and writes the habitat-supply summary table. |
-| `Code/Analyses/08_summarise_naive_occurrence.R` | Summarizes naive detections from `Data/response.csv` by site, treatment, year, and species; writes occurrence summary CSVs to `Results/Summaries`. |
-| `Code/Analyses/optional_acoustic_thresholding.Rmd` | Optional provenance notebook for acoustic detector threshold selection and occurrence-table generation. It is not required to rerun the manuscript analysis pipeline from the public `response.csv` and `predictors.csv` files. |
+These are processed analysis inputs. Proprietary Al-Pac vegetation inventory and harvest spatial layers, raw audio, detector-window tables, and development analyses are not distributed here. Aggregate landscape accounting values allow projections without those spatial layers.
 
-## Variable definitions
-### response.csv
-| Variable | Description | Units/values |
-|----------|-------------|--------------|
-| `location` | Site/location identifier for the recording. This is the key used to join site-level covariates from `predictors.csv`. | Character string, e.g., `UP-1-1-CC`. |
-| `transect` | Spatial transect or cluster identifier. Sites were organized in treatment triplets within these clusters. | Character string, e.g., `UP-1`. |
-| `treatment` | Harvest treatment assigned to the site. | `CLH` = conventional low-retention harvest; `OF` = unharvested old forest; `UP` = understory protection harvest. |
-| `year` | Calendar year in which the recording was collected. | Year; observed values in this file are 2015, 2016, and 2020-2025. |
-| `doy` | Day of year on which the recording was collected. | Julian day; observed range 146-196. |
-| `tod` | Time of day at the start of the recording. | Minutes after midnight; observed range 202-1286. |
-| `BBWA` | Bay-breasted Warbler detection/non-detection for the recording after applying the species-specific acoustic confidence threshold. | Binary; `1` = detected, `0` = not detected. |
-| `BRCR` | Brown Creeper detection/non-detection for the recording after applying the species-specific acoustic confidence threshold. | Binary; `1` = detected, `0` = not detected. |
-| `BTNW` | Black-throated Green Warbler detection/non-detection for the recording after applying the species-specific acoustic confidence threshold. | Binary; `1` = detected, `0` = not detected. |
-| `HETH` | Hermit Thrush detection/non-detection for the recording after applying the species-specific acoustic confidence threshold. | Binary; `1` = detected, `0` = not detected. |
-| `TEWA` | Tennessee Warbler detection/non-detection for the recording after applying the species-specific acoustic confidence threshold. | Binary; `1` = detected, `0` = not detected. |
-| `WIWR` | Winter Wren detection/non-detection for the recording after applying the species-specific acoustic confidence threshold. | Binary; `1` = detected, `0` = not detected. |
+### Response variables
 
-### predictors.csv
-| Variable | Description | Units/values |
-|----------|-------------|--------------|
-| `location` | Site/location identifier. This key is used to join site-level covariates to the recording-level rows in `response.csv`. | Character string, e.g., `UP-10-67-UP`. |
-| `distance_to_edge_m` | Distance from the recording site to the treatment or stand edge, used as a site-level occupancy covariate. | Metres; observed range 10-454. |
-| `harvest_year` | Calendar year in which the site was harvested. Unharvested old-forest sites are coded as missing. This variable is used to calculate time since harvest for harvested treatments. | Year; observed harvested-site range 1985-2015; `NA` = no harvest year. |
-| `uheight` | Retained understory height at the site, used by the final model as an understory-protection-only covariate on initial occupancy. | Metres; observed non-missing range 0-17; `NA` = missing value. |
+| Column | Definition |
+| --- | --- |
+| location | Site identifier and join key. Identifiers retain historical CC/OG suffixes; use the treatment column for analysis labels. |
+| transect | Spatial cluster identifier. |
+| treatment | CLH, OF, or UP. |
+| year | Calendar year of the recording. |
+| doy | Day of year (146–197 in the revised data). |
+| tod | Recording start time in minutes after midnight (286–460). |
+| BBWA, BRCR, BTNW, HETH, TEWA, WIWR | Binary recording detections: 1 = detected, 0 = not detected. |
 
-## Software and dependencies
+### Site predictors
 
-All analyses were performed in R (R Core Team 2024). Key packages:
-- `tidyverse` — data manipulation, summaries, and plotting
-- `cmdstanr` — Stan model compilation, sampling, and fitted-model access
-- `posterior` — posterior draw summaries and diagnostics
-- `loo` — leave-one-out cross-validation inputs and model-checking summaries
-- `patchwork` — multi-panel figure assembly
-- `dotenv` — loading the optional `CMDSTAN_PATH` environment variable from `.env`
+| Column | Definition |
+| --- | --- |
+| location | Unique site identifier matching response.csv. |
+| distance_to_edge_m | Distance to treatment edge, in metres. |
+| harvest_year | Harvest year; NA for unharvested OF sites. |
+| uheight | Retained understory height, in metres, used only at UP sites. Missing UP values are imputed with the observed UP mean before scaling; non-UP model inputs are zero. |
 
-The Stan model requires a working CmdStan installation available through `cmdstanr`.
+Script 01 saves scaling values and maps with the Stan input. To reproduce the fitted analysis, TSH is standardized using the 2015 values across all sites, including OF zeros; detection covariates use the species-long recording table. DTE is standardized across sites and height across UP sites. Structural trajectory predictions use treatment-specific median DTE, median UP height, zero cluster effect, and no calendar-year effects. These references differ from mean-covariate baseline summaries.
 
+### Acoustic and landbase provenance
 
+In the threshold table, threshold is the score at modelled P(true positive) = 0.90; threshold_lo90/hi90 are saved simulation limits. n_true/n_false count validated windows, roc_auc_sample is the unweighted validation-sample ROC-AUC, and n_above/false_above count validated windows above threshold. Precision and its bootstrap limits are weighted by confidence-score × recording-origin strata. detected_siteyears and n_siteyears give detected and total site-years. These are saved computational outputs; the table does not contain recall. The Brown Creeper empirical bootstrap precision interval is degenerate at 1 because no validated retained window was false; it does not imply certainty about population precision.
 
-## Reproduction
+The landbase accounting table gives component, value_ha, and definition; annual components have units ha/year. The companion rates table gives annual inflow, harvest loss, fire loss, and signed net OF change, all in ha/year.
 
-1. Clone the repository or download from Borealis
-2. Place data files in a `Data/` directory relative to the code files
-3. Run code files in order
+## Software
+
+The fitted analysis used CmdStan 2.38.0 and cmdstanr 0.9.0. The revised workflow was checked with R 4.5.3. Required R packages are tidyverse, cmdstanr, posterior, and loo. The optional plots use patchwork; dotenv is needed only when loading a local .env file.
+
+Install CmdStan and its C++ toolchain using cmdstanr. If cmdstanr already finds the installation, no environment file is needed. Otherwise copy .env.example to .env and set CMDSTAN_PATH to your installation directory. The local .env file is excluded from Git.
+
+## Run the analysis
+
+Run from the repository root, where Analyses/ and Data/ are located:
+
+    source("Analyses/01_prepare_stan_data.R")
+    source("Analyses/02_fit_dynocc_model.R")
+    source("Analyses/03_extract_posterior_summaries.R")
+    source("Analyses/06_project_habitat_supply.R")
+    source("Analyses/08_summarise_naive_occurrence.R")
+
+Script 02 runs four chains with 1,000 warm-up and 1,000 sampling iterations each, using the saved analysis seed (2133273333). Fitting requires substantial time and memory. Monte Carlo results can vary across software versions and platforms.
+
+| Existing file in Analyses/ | Main output or purpose |
+| --- | --- |
+| 01_prepare_stan_data.R | Data/REVISED/full_data_for_stan.rds, recreated from revised CSVs; never overwrites the original cache in Data/. |
+| 02_fit_dynocc_model.R | Self-contained Results/Model fits/Model_fit.rds, persistent chain CSVs, convergence diagnostics, E-BFMI, and session information. |
+| dynocc_multispecies.stan | Final model, site-by-species log likelihoods, contrasts, and generated trajectories. |
+| 03_extract_posterior_summaries.R | CSVs in Results/Summaries/: detection, covariate and treatment effects, structural trajectories, convergence, and species-level LOO diagnostics. |
+| 06_project_habitat_supply.R | Three-species scenario trajectories, occupancy lookup summaries, and Table 3 endpoint changes in Results/Projections/. |
+| 08_summarise_naive_occurrence.R | Observed occurrence summaries in Results/Summaries/. |
+
+The existing 04_plot_dynocc_figures.R and 07_plot_habitat_supply.R are optional reference plotting scripts. They are not required to produce analysis tables. Script 07 requires script 06 first. The existing 05_extract_OF_brcr_trends.R is an optional structural-trajectory diagnostic: its year index is elapsed trajectory time and its BRCR change scenarios are **not** inputs to Table 3. Its filename is retained for compatibility. No additional scripts are needed.
+
+## Projection assumptions
+
+Projections preserve the Table 3 computation and evaluate BRCR, WIWR, and BBWA over 22 projection years. They start with 455,169 ha of OF (83,502 reserved and 371,667 harvestable), 22,336 ha of CLH, and 5,192 ha of UP.
+
+All scenarios use net OF loss of 1,403 ha/year: fire loss of 4,803 plus harvest loss of 595 minus successional inflow of 3,995. New annual harvested area is 27,528 / 22 ha. Only new harvest allocation changes: S1 uses the current UP fraction (5,192 / 27,528), S2 uses 0% UP, and S3 uses 20% UP.
+
+Initial harvested area is distributed equally across 22 age classes, indexed 0–21. Each year cohorts age, the oldest exits the accounting window, and a new age-zero cohort enters. Total harvested area therefore stays constant. This is an aggregate accounting assumption, not the observed distribution of mapped harvest cohorts. The OF pool changes separately; burned area is never assigned to a harvest treatment.
+
+For each starting age, the occupancy lookup averages an 11-year dynamic trajectory in which stand age advances annually. Starting ages 0–21 therefore evaluate ages through 31, with year and cluster effects set to zero. These values are trajectory averages, not occupancy at a single age. The 22-year accounting window is not an empirical UP age limit: observed UP survey ages extend to 20 years. Predictions beyond observed ages involve extrapolation.
+
+Expected occupied area sums each pool's area multiplied by its occupancy probability. Occupied percentage divides that value by remaining focal area in each projection year. Table 3 changes are differences between endpoint posterior medians, rather than posterior medians of draw-wise differences. No future temporal decline in OF occupancy is imposed in addition to the specified area loss.
 
 ## License
 
-Code in this repository is released under the MIT License; see `LICENSE`.
+Code is released under the MIT License; see [LICENSE](LICENSE). Consult Borealis for dataset licensing and version information.

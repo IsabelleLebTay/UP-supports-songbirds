@@ -1,13 +1,16 @@
 # Prepare data for the multi-species dynamic occupancy model.
 #
 # Inputs:
-#   Data/response.csv   recording-level detection/non-detection data
-#   Data/predictors.csv site-level covariates
+#   Data/REVISED/response.csv   recording-level detection/non-detection data
+#   Data/REVISED/predictors.csv site-level covariates
 #
 # Output:
-#   Data/full_data_for_stan.rds
+#   Data/REVISED/full_data_for_stan.rds
 
 library(tidyverse)
+
+# Run from the repository root. Original data in Data/ are never overwritten.
+data_dir <- file.path("Data", "REVISED")
 
 species_codes <- c("BBWA", "WIWR", "HETH", "TEWA", "BTNW", "BRCR")
 year_base <- 2015L
@@ -26,6 +29,8 @@ add_site_covariates <- function(full_data, predictors) {
     ) %>%
     arrange(site_id)
 
+  full_data$scaling$dte_mean <- mean(site_covariates$distance_to_edge_m)
+  full_data$scaling$dte_sd <- sd(site_covariates$distance_to_edge_m)
   full_data$stan_data$dte <- as.numeric(scale(site_covariates$distance_to_edge_m))
 
   dte_reference <- tibble(
@@ -98,6 +103,27 @@ prepare_dynocc_data <- function(response, predictors, species_codes) {
   required_predictor_cols <- c("location", "harvest_year", "distance_to_edge_m", "uheight")
   missing_predictor_cols <- setdiff(required_predictor_cols, names(predictors))
 
+  if (length(missing_response_cols) || length(missing_predictor_cols)) {
+    stop("Missing required columns: ", paste(c(missing_response_cols, missing_predictor_cols), collapse = ", "))
+  }
+  if (anyNA(response[required_response_cols]) ||
+      !all(response$treatment %in% names(treatment_lookup)) ||
+      !all(response$year %in% (year_base + seq_len(n_years_total) - 1L)) ||
+      !all(as.matrix(response[species_codes]) %in% c(0, 1))) {
+    stop("Response must contain complete identifiers, valid treatments/years, and binary detections.")
+  }
+  if (anyDuplicated(predictors$location) ||
+      anyDuplicated(distinct(response, location, transect, treatment)$location) ||
+      !all(response$location %in% predictors$location)) {
+    stop("Each site must have one cluster, one treatment, and exactly one predictor row.")
+  }
+  site_check <- distinct(response, location, treatment) %>%
+    left_join(predictors, by = "location")
+  if (any(!is.finite(site_check$distance_to_edge_m)) ||
+      any(!is.finite(site_check$harvest_year[site_check$treatment != "OF"]))) {
+    stop("Distance to edge is required for every site; harvest year is required for harvested sites.")
+  }
+
   sites <- response %>%
     distinct(location, transect, treatment) %>%
     mutate(
@@ -167,6 +193,8 @@ prepare_dynocc_data <- function(response, predictors, species_codes) {
     }
   }
 
+  # Preserve the fitted analysis: TSH is scaled across all sites in 2015,
+  # including OF zeros. OF TSH slopes are fixed to zero in Stan.
   tsh_first_year <- tsh_matrix_raw[, 1]
   tsh_mean <- mean(tsh_first_year)
   tsh_sd <- sd(tsh_first_year)
@@ -177,6 +205,7 @@ prepare_dynocc_data <- function(response, predictors, species_codes) {
     summarise(n_visits = n(), first_visit_idx = min(visit_id), .groups = "drop") %>%
     arrange(site_id)
 
+  # Use the species-long table to retain the scaling used for the fitted model.
   doy_mean <- mean(det_focal$doy, na.rm = TRUE)
   doy_sd <- sd(det_focal$doy, na.rm = TRUE)
   tod_mean <- mean(det_focal$tod, na.rm = TRUE)
@@ -257,9 +286,15 @@ prepare_dynocc_data <- function(response, predictors, species_codes) {
     add_site_covariates(predictors)
 }
 
-response <- read_csv(file.path("Data", "response.csv"), show_col_types = FALSE)
-predictors <- read_csv(file.path("Data", "predictors.csv"), show_col_types = FALSE)
+response <- read_csv(file.path(data_dir, "response.csv"), show_col_types = FALSE)
+predictors <- read_csv(file.path(data_dir, "predictors.csv"), show_col_types = FALSE)
 
 full_data <- prepare_dynocc_data(response, predictors, species_codes)
 
-saveRDS(full_data, file.path("Data", "full_data_for_stan.rds"))
+if (any(!is.finite(unlist(full_data$stan_data)))) {
+  stop("Prepared model input contains non-finite values; check covariates and scaling.")
+}
+message(sprintf("Prepared %d sites, %d site-years, and %d recordings.",
+                full_data$stan_data$n_sites, full_data$stan_data$n_visits,
+                full_data$stan_data$n_obs))
+saveRDS(full_data, file.path(data_dir, "full_data_for_stan.rds"))

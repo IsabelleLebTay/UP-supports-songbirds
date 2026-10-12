@@ -2,7 +2,7 @@
 #
 # Inputs:
 #   Results/Model fits/Model_fit.rds
-#   Data/full_data_for_stan.rds
+#   Data/REVISED/full_data_for_stan.rds
 #
 # Outputs:
 #   Results/Summaries/*.csv
@@ -16,7 +16,7 @@ summary_dir <- file.path("Results", "Summaries")
 dir.create(summary_dir, recursive = TRUE, showWarnings = FALSE)
 
 fit <- readRDS(file.path("Results", "Model fits", "Model_fit.rds"))
-full_data <- readRDS(file.path("Data", "full_data_for_stan.rds"))
+full_data <- readRDS(file.path("Data", "REVISED", "full_data_for_stan.rds"))
 
 species_labels <- full_data$species_map$species
 treatment_labels <- c("CLH", "OF", "UP")
@@ -104,8 +104,8 @@ loo_summary <- map_dfr(seq_len(n_species), function(sp) {
     elpd_loo = loo_sp$estimates["elpd_loo", "Estimate"],
     se_elpd_loo = loo_sp$estimates["elpd_loo", "SE"],
     p_loo = loo_sp$estimates["p_loo", "Estimate"],
-    n_pareto_k_high = sum(pareto_k > 0.7),
-    n_pareto_k_very_high = sum(pareto_k > 1.0),
+    n_pareto_k_high = sum(pareto_k >= 0.7 & pareto_k < 1.0),
+    n_pareto_k_very_high = sum(pareto_k >= 1.0),
     max_pareto_k = max(pareto_k)
   )
 })

@@ -1,8 +1,9 @@
-# Create manuscript and supplement figures from the final dynamic occupancy model.
+# Optional reference plots from the final dynamic occupancy model.
+# Figure styling can be adapted from the exported summaries.
 #
 # Inputs:
 #   Results/Model fits/Model_fit.rds
-#   Data/full_data_for_stan.rds
+#   Data/REVISED/full_data_for_stan.rds
 #
 # Outputs:
 #   Results/Figures/*.jpeg
@@ -16,7 +17,7 @@ figure_dir <- file.path("Results", "Figures")
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
 
 fit <- readRDS(file.path("Results", "Model fits", "Model_fit.rds"))
-full_data <- readRDS(file.path("Data", "full_data_for_stan.rds"))
+full_data <- readRDS(file.path("Data", "REVISED", "full_data_for_stan.rds"))
 
 species_labels <- full_data$species_map$species
 species_order <- c("TEWA", "WIWR", "HETH", "BRCR", "BTNW", "BBWA")
@@ -108,7 +109,7 @@ ggsave(
   dpi = 300
 )
 
-# Figure 3: occupancy through study years by treatment ------------------------
+# Figure S5: occupancy through study years by treatment ------------------------
 project_occupancy_by_treatment <- function(sp, trt) {
   psi <- draw_var(paste0("psi_baseline[", sp, ",", trt, "]"))
   n_draws <- length(psi)
@@ -154,7 +155,7 @@ figure_3 <- ggplot(occ_year_summary, aes(x = year, y = median, colour = treatmen
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggsave(
-  file.path(figure_dir, "Figure_3_occ_by_treatment.jpeg"),
+  file.path(figure_dir, "Figure_S5_occ_by_treatment.jpeg"),
   figure_3,
   width = 8,
   height = 5,
@@ -169,10 +170,10 @@ baseline_summary <- crossing(
 ) %>%
   mutate(summary = pmap(list(species_id, treatment_id, process), \(sp, trt, process) {
     if (process == "psi") {
-      summarise_draws(draw_var(paste0("psi_baseline[", sp, ",", trt, "]")), 0.025, 0.975)
+      summarise_draws(draw_var(paste0("psi_baseline[", sp, ",", trt, "]")))
     } else {
       vars <- paste0(process, "_by_trt_year[", sp, ",", trt, ",", seq_along(years), "]")
-      summarise_draws(rowMeans(fit$draws(vars, format = "matrix")), 0.025, 0.975)
+      summarise_draws(rowMeans(fit$draws(vars, format = "matrix")))
     }
   })) %>%
   unnest(summary) %>%
@@ -220,8 +221,8 @@ summarise_detection_curve <- function(covariate = c("tod", "doy"), n_points = 12
       species = species_labels[sp],
       value = value_seq,
       median = apply(probs, 2, median),
-      lower = apply(probs, 2, quantile, 0.10),
-      upper = apply(probs, 2, quantile, 0.90),
+      lower = apply(probs, 2, quantile, 0.025),
+      upper = apply(probs, 2, quantile, 0.975),
       covariate = covariate
     )
   })
@@ -272,7 +273,7 @@ dte_summary <- crossing(
         draw_var(paste0("beta_trt_psi[", sp, ",", trt, "]")) +
         draw_var(paste0("beta_dte_out[", sp, ",", trt, "]")) * dte
     )
-    summarise_draws(psi)
+    summarise_draws(psi, 0.025, 0.975)
   })) %>%
   unnest(summary) %>%
   mutate(
@@ -314,7 +315,7 @@ uheight_summary <- crossing(
         draw_var(paste0("beta_trt_psi[", sp, ",3]")) +
         draw_var(paste0("beta_uheight_psi_out[", sp, "]")) * uheight_grid_scaled[grid_id]
     )
-    summarise_draws(psi)
+    summarise_draws(psi, 0.025, 0.975)
   })) %>%
   unnest(summary) %>%
   mutate(
@@ -338,7 +339,7 @@ ggsave(
   dpi = 300
 )
 
-# Supplement: TSH slope diagnostics ------------------------------------------
+# Figure 3: treatment-specific TSH slopes ------------------------------------------
 tsh_slope_summary <- crossing(
   species_id = seq_along(species_labels),
   treatment_id = c(1L, 3L),
@@ -368,7 +369,7 @@ figure_s5 <- ggplot(tsh_slope_summary, aes(x = median, y = species, colour = tre
   theme_pub()
 
 ggsave(
-  file.path(figure_dir, "Figure_S5_tsh_slopes.jpeg"),
+  file.path(figure_dir, "Figure_3_tsh_slopes.jpeg"),
   figure_s5,
   width = 8,
   height = 4,

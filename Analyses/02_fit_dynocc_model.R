@@ -1,26 +1,29 @@
 # Fit the final multi-species dynamic occupancy model.
 #
 # Inputs:
-#   Data/full_data_for_stan.rds
-#   Code/Analyses/dynocc_multispecies.stan
+#   Data/REVISED/full_data_for_stan.rds
+#   Analyses/dynocc_multispecies.stan
 #
 # Outputs:
-#   Results/Model fits/Multispp_height.rds
+#   Results/Model fits/Model_fit.rds
 #   Results/Summaries/model_fit_diagnostics.csv
 
 library(tidyverse)
 library(cmdstanr)
 library(posterior)
 
-dotenv::load_dot_env(file = ".env")
-cmdstanr::set_cmdstan_path(Sys.getenv("CMDSTAN_PATH"))
+# An existing CmdStan installation is used by default; .env is optional.
+if (file.exists(".env")) dotenv::load_dot_env(file = ".env")
+cmdstan_path <- Sys.getenv("CMDSTAN_PATH")
+if (nzchar(cmdstan_path)) cmdstanr::set_cmdstan_path(cmdstan_path)
+cmdstanr::cmdstan_version(error_on_NA = TRUE)
 
 fit_dir <- file.path("Results", "Model fits")
 summary_dir <- file.path("Results", "Summaries")
 dir.create(fit_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(summary_dir, recursive = TRUE, showWarnings = FALSE)
 
-full_data <- readRDS(file.path("Data", "full_data_for_stan.rds"))
+full_data <- readRDS(file.path("Data", "REVISED", "full_data_for_stan.rds"))
 stan_data <- full_data$stan_data
 
 required_stan_fields <- c(
@@ -30,6 +33,9 @@ required_stan_fields <- c(
   "first_rec_idx", "y", "doy", "tod", "n_tsh_grid", "tsh_grid", "dte_ref",
   "uheight_ref"
 )
+
+missing_fields <- setdiff(required_stan_fields, names(stan_data))
+if (length(missing_fields)) stop("Run 01_prepare_stan_data.R first; missing: ", paste(missing_fields, collapse = ", "))
 
 init_fn <- function() {
   n_sp <- stan_data$n_species
@@ -116,7 +122,7 @@ init_fn <- function() {
   )
 }
 
-model <- cmdstan_model(file.path("Code", "Analyses", "dynocc_multispecies.stan"))
+model <- cmdstan_model(file.path("Analyses", "dynocc_multispecies.stan"))
 
 
 fit <- model$sample(
@@ -126,11 +132,14 @@ fit <- model$sample(
   parallel_chains = 4,
   iter_warmup = 1000,
   iter_sampling = 1000,
-
+  seed = 2133273333,
+  output_dir = fit_dir,
+  output_basename = "dynocc"
 )
 
 fit_path <- file.path(fit_dir, "Model_fit.rds")
-saveRDS(fit, fit_path)
+# Materialize draws before saving so the RDS does not depend on temporary CSVs.
+fit$save_object(file = fit_path)
 
 draw_summary <- posterior::summarise_draws(fit$draws())
 sampler_diag <- fit$diagnostic_summary()
@@ -159,3 +168,7 @@ diagnostics <- tibble(
 )
 
 write_csv(diagnostics, file.path(summary_dir, "model_fit_diagnostics.csv"))
+
+write_csv(tibble(chain = seq_along(sampler_diag$ebfmi), ebfmi = sampler_diag$ebfmi),
+          file.path(summary_dir, "ebfmi_per_chain.csv"))
+capture.output(sessionInfo(), file = file.path(summary_dir, "session_info.txt"))
