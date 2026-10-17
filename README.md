@@ -3,7 +3,7 @@
 Code for Lebeuf-Taylor, I., T. Hart, T. Habib, and E. Bayne. *Ecological Applications* (in review).
 
 Data: [Borealis, doi:10.5683/SP3/OZUBY9](https://doi.org/10.5683/SP3/OZUBY9)
-Contact: Isabelle Lebeuf-Taylor, University of Alberta (lebeufta@ualberta.ca)
+Contact: Isabelle Lebeuf-Taylor, University of Alberta
 
 ## Overview
 
